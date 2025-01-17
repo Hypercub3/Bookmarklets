@@ -20,7 +20,8 @@
 # Adaptive Text Highlighter Bookmarklet Documentation
 
 ## Overview
-A JavaScript bookmarklet that intelligently highlights searched text on webpages, automatically adapting to both light and dark backgrounds. It supports multiple highlighted terms simultaneously, each with a unique color, and automatically adjusts text contrast for optimal readability. When re-searching an already highlighted term, it replaces existing highlights with a new color.
+A JavaScript bookmarklet that highlights searched text on webpages, for both light and dark backgrounds. selected text is used for highlighted terms with fallback to a search prompt to enter a phrase manually. colors are randomly chosen from a color pallet. It automatically adjusts text contrast for light/dark readability. When re-searching an already highlighted term, it replaces existing highlights with a new color. keep clicking with a silected term and the colors change for that term.
+
 
 ## Installation
 1. Create a new bookmark in your browser
