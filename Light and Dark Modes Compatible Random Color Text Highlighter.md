@@ -16,13 +16,14 @@
   - [Bookmarklet Code (Minified)](#bookmarklet-code-minified)
   - [Full Source Code (Commented)](#full-source-code-commented)
 
+## GitHub Description
+
+Adaptive Text Highlighter is a JavaScript bookmarklet that highlights text on webpages, automatically choosing suitable highlight colors for both light and dark backgrounds. You can highlight text by selecting it or by entering a search term, and it supports multiple terms at once, each with a distinct color. Re-searching a term updates its existing highlight to a new color. The bookmarklet uses background detection, manages different color palettes, and implements DOM traversal to handle large pages reliably.
 
 # Adaptive Text Highlighter Bookmarklet Documentation
 
 ## Overview
 A JavaScript bookmarklet that highlights searched text on webpages, for both light and dark backgrounds. selected text is used for highlighted terms with fallback to a search prompt to enter a phrase manually. colors are randomly chosen from a color pallet. It automatically adjusts text contrast for light/dark readability. When re-searching an already highlighted term, it replaces existing highlights with a new color. keep clicking with a silected term and the colors change for that term.
-
-
 ## Installation
 1. Create a new bookmark in your browser
 2. Name it anything you like (e.g., "Smart Highlight")
@@ -121,7 +122,7 @@ A JavaScript bookmarklet that highlights searched text on webpages, for both lig
 
 ## Bookmarklet Code (Minified)
 ```javascript
-javascript:(function(){var c=0,t=window.getSelection().toString().trim();if(t==null||t.length==0){t=prompt("Search phrase:","");if(t==null||t.length==0)return}const l=['#FFD280','#90EE90','#87CEFA','#FFB6C1','#FFEB7F','#DDA0DD','#80FFEF','#B5B5FF','#FFB399','#99FF99','#FFB3E6','#E6B3FF','#B3D9FF','#CCFFB3','#FFE0B3'],d=['#804000','#006400','#004080','#800040','#806000','#400080','#008080','#404080','#804020','#208020','#802060','#602080','#204080','#408020','#806040'];function i(e){try{let b=window.getComputedStyle(e).backgroundColor,n=e;while((b==='transparent'||b==='rgba(0, 0, 0, 0)')&&n.parentElement&&n.tagName!=='HTML'){n=n.parentElement;b=window.getComputedStyle(n).backgroundColor}if(b==='transparent'||b==='rgba(0, 0, 0, 0)'){let d=!1,c=e;while(c&&c.tagName!=='HTML'){const r=window.getComputedStyle(c).backgroundColor.match(/\d+/g);if(r&&(parseInt(r[0])*299+parseInt(r[1])*587+parseInt(r[2])*114)/1000<128){d=!0;break}c=c.parentElement}if(!d)d=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;return d}const r=b.match(/\d+/g);return r?(parseInt(r[0])*299+parseInt(r[1])*587+parseInt(r[2])*114)/1000<128:!1}catch(e){return!1}}const k=i(window.getSelection().anchorNode?window.getSelection().anchorNode.parentElement:document.body),h=k?d:l,e=document.querySelectorAll(`span[data-highlight-term="${t}"]`);e.forEach(h=>{const p=h.parentNode;p.replaceChild(document.createTextNode(h.textContent),h);p.normalize()});const r=document.querySelectorAll('span[data-highlight-term]'),a=new Set;r.forEach(h=>{h.getAttribute('data-highlight-term')!==t&&a.add(h.style.backgroundColor)});function x(r){try{if(r.startsWith('#'))return r;const v=r.match(/\d+/g);return v?'#'+v.map(x=>{const h=parseInt(x).toString(16);return h.length===1?'0'+h:h}).join(''):'#000000'}catch(e){return'#000000'}}const u=Array.from(a).map(x),v=h.filter(c=>!u.includes(c)),m=v.length>0?v[Math.floor(Math.random()*v.length)]:h[Math.floor(Math.random()*h.length)];function g(c){try{const h=c.replace('#',''),r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return(r*299+g*587+b*114)/1000>128?'#000000':'#FFFFFF'}catch(e){return k?'#FFFFFF':'#000000'}}function s(n,e,l,c){try{if(!n||!n.textContent||n.textContent.trim()==='')return 0;var p,k,d,m,b,q=0;if(n.nodeType===3){p=n.data.toUpperCase().indexOf(e.toUpperCase());if(p>=0){d=document.createElement("SPAN");d.style.backgroundColor=c;d.style.color=g(c);d.setAttribute('data-highlight-term',t);m=n.splitText(p);b=m.splitText(l);k=m.cloneNode(!0);d.appendChild(k);m.parentNode.replaceChild(d,m);++c;q=1}}else if(n.nodeType===1&&n.childNodes&&!/(script|style|textarea)/i.test(n.tagName))for(var i=0;i<n.childNodes.length;i++)i+=s(n.childNodes[i],e,l,c);return q}catch(e){return 0}}window.status="Searching for '"+t+"'...";s(document.body,t,t.length,m);window.status="Found "+c+" occurrence"+(c==1?"":"s")+" of '"+t+"'."})();
+javascript:(function(){var c=0,t,s=window.getSelection(),r=s.rangeCount>0?s.getRangeAt(0).cloneRange():null;t=s.toString().trim();if(t==null||t.length==0){t=prompt("Search phrase:","");if(t==null||t.length==0)return}const l=['#FFD280','#90EE90','#87CEFA','#FFB6C1','#FFEB7F','#DDA0DD','#80FFEF','#B5B5FF','#FFB399','#99FF99','#FFB3E6','#E6B3FF','#B3D9FF','#CCFFB3','#FFE0B3'],d=['#804000','#006400','#004080','#800040','#806000','#400080','#008080','#404080','#804020','#208020','#802060','#602080','#204080','#408020','#806040'];function i(e){try{let b=window.getComputedStyle(e).backgroundColor,n=e;while((b==='transparent'||b==='rgba(0, 0, 0, 0)')&&n.parentElement&&n.tagName!=='HTML'){n=n.parentElement;b=window.getComputedStyle(n).backgroundColor}if(b==='transparent'||b==='rgba(0, 0, 0, 0)'){let d=!1,c=e;while(c&&c.tagName!=='HTML'){const r=window.getComputedStyle(c).backgroundColor.match(/\d+/g);if(r&&(parseInt(r[0])*299+parseInt(r[1])*587+parseInt(r[2])*114)/1000<128){d=!0;break}c=c.parentElement}return d}const r=b.match(/\d+/g);return r?(parseInt(r[0])*299+parseInt(r[1])*587+parseInt(r[2])*114)/1000<128:!1}catch(e){return!1}}const k=i(s.anchorNode?s.anchorNode.parentElement:document.body),h=k?d:l,e=document.querySelectorAll(`span[data-highlight-term="${t}"]`);e.forEach(h=>{const p=h.parentNode;p.replaceChild(document.createTextNode(h.textContent),h);p.normalize()});const a=document.querySelectorAll('span[data-highlight-term]'),v=new Set;a.forEach(h=>{h.getAttribute('data-highlight-term')!==t&&v.add(h.style.backgroundColor)});function x(r){try{if(r.startsWith('#'))return r;const v=r.match(/\d+/g);return v?'#'+v.map(x=>{const h=parseInt(x).toString(16);return h.length===1?'0'+h:h}).join(''):'#000000'}catch(e){return'#000000'}}const u=Array.from(v).map(x),w=h.filter(c=>!u.includes(c)),m=w.length>0?w[Math.floor(Math.random()*w.length)]:h[Math.floor(Math.random()*h.length)];function g(c){try{const h=c.replace('#',''),r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return(r*299+g*587+b*114)/1000>128?'#000000':'#FFFFFF'}catch(e){return k?'#FFFFFF':'#000000'}}function n(o,e,l,c){try{if(!o||!o.textContent||o.textContent.trim()==='')return 0;var p,q=0;if(o.nodeType===3){const y=o.data.toUpperCase();p=y.indexOf(e.toUpperCase());if(p>=0){const d=document.createElement("SPAN");d.style.backgroundColor=c;d.style.color=g(c);d.setAttribute('data-highlight-term',t);const m=o.splitText(p),b=m.splitText(l),z=m.cloneNode(!0);d.appendChild(z);m.parentNode.replaceChild(d,m);++c;q=1}}else if(o.nodeType===1&&o.childNodes&&!/(script|style|textarea)/i.test(o.tagName))for(var i=0;i<o.childNodes.length;i++)i+=n(o.childNodes[i],e,l,c);return q}catch(e){return 0}}window.status="Searching for '"+t+"'...";n(document.body,t,t.length,m);window.status="Found "+c+" occurrence"+(c==1?"":"s")+" of '"+t+"'.";if(r){s.removeAllRanges();s.addRange(r)}})();
 ```
 
 ## Full Source Code (Commented)
@@ -129,8 +130,12 @@ javascript:(function(){var c=0,t=window.getSelection().toString().trim();if(t==n
 javascript:(function() {
     var count = 0, text;
     
+    // Store the current selection
+    const selection = window.getSelection();
+    const originalRange = selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
+    
     // Get selected text or prompt for search phrase
-    text = window.getSelection().toString().trim();
+    text = selection.toString().trim();
     if (text == null || text.length == 0) {
         text = prompt("Search phrase:", "");
         if (text == null || text.length == 0) return;
@@ -179,7 +184,7 @@ javascript:(function() {
             let bgColor = window.getComputedStyle(element).backgroundColor;
             let currentElement = element;
             
-            // Traverse up the DOM tree until we find a non-transparent background
+            // Traverse up the DOM tree for non-transparent background
             while ((bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') && 
                    currentElement.parentElement && 
                    currentElement.tagName !== 'HTML') {
@@ -189,7 +194,6 @@ javascript:(function() {
 
             // If we still don't have a valid color, check if we're in dark mode
             if (bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') {
-                // Check if any parent has a dark background color
                 let isDark = false;
                 currentElement = element;
                 while (currentElement && currentElement.tagName !== 'HTML') {
@@ -204,10 +208,6 @@ javascript:(function() {
                     }
                     currentElement = currentElement.parentElement;
                 }
-                // If no dark background found, check system dark mode preference
-                if (!isDark) {
-                    isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                }
                 return isDark;
             }
 
@@ -216,13 +216,12 @@ javascript:(function() {
             const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
             return brightness < 128;
         } catch (e) {
-            // If there's any error, default to light mode
             return false;
         }
     }
 
     // Get background color of the current selection's container
-    let selectedNode = window.getSelection().anchorNode;
+    let selectedNode = selection.anchorNode;
     const isDark = isDarkBackground(selectedNode ? selectedNode.parentElement : document.body);
     const highlights = isDark ? darkBgHighlights : lightBgHighlights;
 
@@ -284,14 +283,11 @@ javascript:(function() {
 
     function searchWithinNode(node, searchText, len, color) {
         try {
-            var pos, skip, spannode, middlebit, endbit, middleclone;
-            skip = 0;
-
-            // Skip empty nodes
             if (!node || !node.textContent || node.textContent.trim() === '') {
                 return 0;
             }
-
+            var pos, skip = 0;
+            
             if (node.nodeType === 3) {  // Text node
                 const nodeText = node.data.toUpperCase();
                 searchText = searchText.toUpperCase();
@@ -299,15 +295,15 @@ javascript:(function() {
 
                 if (pos >= 0) {
                     // Create highlight span
-                    spannode = document.createElement("SPAN");
+                    const spannode = document.createElement("SPAN");
                     spannode.style.backgroundColor = color;
                     spannode.style.color = getTextColor(color);
                     spannode.setAttribute('data-highlight-term', text);
 
                     // Split text and apply highlight
-                    middlebit = node.splitText(pos);
-                    endbit = middlebit.splitText(len);
-                    middleclone = middlebit.cloneNode(true);
+                    const middlebit = node.splitText(pos);
+                    const endbit = middlebit.splitText(len);
+                    const middleclone = middlebit.cloneNode(true);
                     spannode.appendChild(middleclone);
                     middlebit.parentNode.replaceChild(spannode, middlebit);
                     count++;
@@ -316,8 +312,7 @@ javascript:(function() {
             } else if (node.nodeType === 1 && node.childNodes && // Element node
                      !/(script|style|textarea)/i.test(node.tagName)) {
                 for (var i = 0; i < node.childNodes.length; i++) {
-                    var childNode = node.childNodes[i];
-                    i += searchWithinNode(childNode, searchText, len, color);
+                    i += searchWithinNode(node.childNodes[i], searchText, len, color);
                 }
             }
             return skip;
@@ -327,8 +322,15 @@ javascript:(function() {
         }
     }
     
+    // Perform the search and highlighting
     window.status = "Searching for '" + text + "'...";
     searchWithinNode(document.body, text, text.length, highlightColor);
     window.status = "Found " + count + " occurrence" + (count == 1 ? "" : "s") + " of '" + text + "'.";
+
+    // Restore the original selection if it existed
+    if (originalRange) {
+        selection.removeAllRanges();
+        selection.addRange(originalRange);
+    }
 })();
 ```
