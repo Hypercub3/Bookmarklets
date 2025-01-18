@@ -13,7 +13,7 @@
   - [Notes](#notes)
   - [Technical Details](#technical-details)
     - [Performance Considerations](#performance-considerations)
-  - [Bookmarklet Code (Minified)](#bookmarklet-code-minified)
+  - **[Bookmarklet Code (Minified)](#bookmarklet-code-minified)**
   - [Full Source Code (Commented)](#full-source-code-commented)
 
 ## GitHub Description
