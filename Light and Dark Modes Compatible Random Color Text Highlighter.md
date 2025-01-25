@@ -13,12 +13,27 @@
   - [Notes](#notes)
   - [Technical Details](#technical-details)
     - [Performance Considerations](#performance-considerations)
-  - **[Bookmarklet Code (Minified)](#bookmarklet-code-minified)**
+  - [Version 3](#version-3)
+    - [1. **Fallback to Light Background**:](#1-fallback-to-light-background)
+    - [2. **Traversal Up the DOM Tree**:](#2-traversal-up-the-dom-tree)
+    - [3. **Error Handling**:](#3-error-handling)
+    - [4. **Invalid RGB Handling**:](#4-invalid-rgb-handling)
+  - [Bookmarklet Code (Minified)](#bookmarklet-code-minified)
   - [Full Source Code (Commented)](#full-source-code-commented)
+  - [Version 2](#version-2)
+  - [Bookmarklet Code (Minified)](#bookmarklet-code-minified-1)
+  - [Full Source Code (Commented)](#full-source-code-commented-1)
+  - [Old Version 1.0](#old-version-10)
+    - [Bookmarklet Code (Minified)](#bookmarklet-code-minified-2)
+    - [Full Source Code (Commented)](#full-source-code-commented-2)
 
 ## GitHub Description
 
 Adaptive Text Highlighter is a JavaScript bookmarklet that highlights text on webpages, automatically choosing suitable highlight colors for both light and dark backgrounds. You can highlight text by selecting it or by entering a search term, and it supports multiple terms at once, each with a distinct color. Re-searching a term updates its existing highlight to a new color. The bookmarklet uses background detection, manages different color palettes, and implements DOM traversal to handle large pages reliably.
+
+### Versioning notes
+v1.2
+ensures that selected text stays selected after clicking the bookmarklet. this allows for selecting another random color by repeatedly clicking it.
 
 # Adaptive Text Highlighter Bookmarklet Documentation
 
@@ -118,7 +133,287 @@ A JavaScript bookmarklet that highlights searched text on webpages, for both lig
 - Minimal impact on page performance
 - Smooth highlight transitions
 - Quick background detection
-- Optimized DOM manipulation
+- Optimized DOM manipulation 
+## Version 3
+Added selection preservation while maintaining existing functionality.
+
+**Key changes:**
+Improved the `isDarkBackground` function:
+
+### 1. **Fallback to Light Background**:
+   - If the computed background color remains unclear (e.g., `transparent`, `rgba(0, 0, 0, 0)`, or not found), the function now defaults to assuming a **light background**.
+   - This prevents the script from incorrectly assuming a dark background in the absence of explicit styling.
+
+   **Added Code**:
+   ```javascript
+   if (bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)' || !bgColor) {
+       return false; // Default to light background
+   }
+   ```
+
+---
+
+### 2. **Traversal Up the DOM Tree**:
+   - Retained the logic to traverse up the DOM tree to look for the first non-transparent background, but ensured it stops correctly at the `<HTML>` tag.
+
+   **Modified Check**:
+   ```javascript
+   while ((bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') &&
+          currentElement.parentElement &&
+          currentElement.tagName !== 'HTML') {
+       currentElement = currentElement.parentElement;
+       bgColor = window.getComputedStyle(currentElement).backgroundColor;
+   }
+   ```
+
+---
+
+### 3. **Error Handling**:
+   - Wrapped the function in a `try-catch` block to handle potential errors gracefully. If an error occurs, the function defaults to assuming a **light background**.
+
+   **Added Code**:
+   ```javascript
+   } catch (e) {
+       console.error('Error in background detection:', e);
+       return false; // Default to light background on error
+   }
+   ```
+
+---
+
+### 4. **Invalid RGB Handling**:
+   - Added a check to handle invalid or malformed RGB values more gracefully. If the computed color doesn't provide valid RGB values, the function defaults to assuming a light background.
+
+   **Added Code**:
+   ```javascript
+   if (!rgb) return false; // Default to light background if invalid
+   ```
+
+---
+
+These changes ensure that the bookmarklet handles simple, minimally styled pages (like the uploaded example) more robustly and avoids incorrectly assuming a dark background when there’s no clear styling.
+## Bookmarklet Code (Minified)
+```javascript
+javascript:(function(){var count=0,text;const selection=window.getSelection(),originalRange=selection.rangeCount>0?selection.getRangeAt(0).cloneRange():null;text=selection.toString().trim();if(text==null||text.length==0){text=prompt("Search phrase:","");if(text==null||text.length==0)return;}const lightBgHighlights=["#FFD280","#90EE90","#87CEFA","#FFB6C1","#FFEB7F","#DDA0DD","#80FFEF","#B5B5FF","#FFB399","#99FF99","#FFB3E6","#E6B3FF","#B3D9FF","#CCFFB3","#FFE0B3"],darkBgHighlights=["#804000","#006400","#004080","#800040","#806000","#400080","#008080","#404080","#804020","#208020","#802060","#602080","#204080","#408020","#806040"];function isDarkBackground(element){try{let bgColor=window.getComputedStyle(element).backgroundColor,currentElement=element;while((bgColor==="transparent"||bgColor==="rgba(0, 0, 0, 0)")&&currentElement.parentElement&&currentElement.tagName!=="HTML"){currentElement=currentElement.parentElement;bgColor=window.getComputedStyle(currentElement).backgroundColor;}if(bgColor==="transparent"||bgColor==="rgba(0, 0, 0, 0)"||!bgColor)return false;const rgb=bgColor.match(/\d+/g);if(!rgb)return false;const brightness=(parseInt(rgb[0])*299+parseInt(rgb[1])*587+parseInt(rgb[2])*114)/1000;return brightness<128;}catch(e){console.error("Error in background detection:",e);return false;}}let selectedNode=selection.anchorNode,isDark=isDarkBackground(selectedNode?selectedNode.parentElement:document.body),highlights=isDark?darkBgHighlights:lightBgHighlights;const existingHighlights=document.querySelectorAll(`span[data-highlight-term="${text}"]`);existingHighlights.forEach(highlight=>{const parent=highlight.parentNode,textNode=document.createTextNode(highlight.textContent);parent.replaceChild(textNode,highlight);parent.normalize();});const currentHighlights=document.querySelectorAll("span[data-highlight-term]"),activeColors=new Set;currentHighlights.forEach(highlight=>{if(highlight.getAttribute("data-highlight-term")!==text)activeColors.add(highlight.style.backgroundColor);});function rgbToHex(rgb){try{if(rgb.startsWith("#"))return rgb;const values=rgb.match(/\d+/g);if(!values)return"#000000";return"#"+values.map(x=>{const hex=parseInt(x).toString(16);return hex.length===1?"0"+hex:hex;}).join("");}catch(e){return"#000000";}}const usedColors=Array.from(activeColors).map(rgbToHex),availableColors=highlights.filter(color=>!usedColors.includes(color)),highlightColor=availableColors.length>0?availableColors[Math.floor(Math.random()*availableColors.length)]:highlights[Math.floor(Math.random()*highlights.length)];function getTextColor(bgColor){try{const hex=bgColor.replace("#",""),r=parseInt(hex.substr(0,2),16),g=parseInt(hex.substr(2,2),16),b=parseInt(hex.substr(4,2),16),brightness=(r*299+g*587+b*114)/1000;return brightness>128?"#000000":"#FFFFFF";}catch(e){return isDark?"#FFFFFF":"#000000";}}function searchWithinNode(node,searchText,len,color){try{if(!node||!node.textContent||node.textContent.trim()==="")return 0;var pos,skip=0;if(node.nodeType===3){const nodeText=node.data.toUpperCase();searchText=searchText.toUpperCase();pos=nodeText.indexOf(searchText);if(pos>=0){const spannode=document.createElement("SPAN");spannode.style.backgroundColor=color;spannode.style.color=getTextColor(color);spannode.setAttribute("data-highlight-term",text);const middlebit=node.splitText(pos),endbit=middlebit.splitText(len),middleclone=middlebit.cloneNode(true);spannode.appendChild(middleclone);middlebit.parentNode.replaceChild(spannode,middlebit);count++;skip=1;}}else if(node.nodeType===1&&node.childNodes&&!/(script|style|textarea)/i.test(node.tagName)){for(var i=0;i<node.childNodes.length;i++)i+=searchWithinNode(node.childNodes[i],searchText,len,color);}}catch(e){console.error("Error in searchWithinNode:",e);return 0;}return skip;}window.status="Searching for '"+text+"'...";searchWithinNode(document.body,text,text.length,highlightColor);window.status="Found "+count+" occurrence"+(count==1?"":"s")+" of '"+text+"'.";if(originalRange){selection.removeAllRanges();selection.addRange(originalRange);}})();
+
+```
+
+## Full Source Code (Commented)
+```javascript
+javascript:(function() {
+    var count = 0, text;
+    
+    // Store the current selection
+    const selection = window.getSelection();
+    const originalRange = selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
+    
+    // Get selected text or prompt for search phrase
+    text = selection.toString().trim();
+    if (text == null || text.length == 0) {
+        text = prompt("Search phrase:", "");
+        if (text == null || text.length == 0) return;
+    }
+    
+    // Define color palettes for different backgrounds
+    const lightBgHighlights = [
+        '#FFD280', // Vivid Orange
+        '#90EE90', // Medium Spring Green
+        '#87CEFA', // Bright Sky Blue
+        '#FFB6C1', // Salmon Pink
+        '#FFEB7F', // Rich Yellow
+        '#DDA0DD', // Plum Purple
+        '#80FFEF', // Bright Cyan
+        '#B5B5FF', // Medium Lavender
+        '#FFB399', // Deep Coral
+        '#99FF99', // Bright Lime
+        '#FFB3E6', // Hot Pink
+        '#E6B3FF', // Vibrant Purple
+        '#B3D9FF', // Clear Blue
+        '#CCFFB3', // Fresh Green
+        '#FFE0B3'  // Warm Sand
+    ];
+
+    const darkBgHighlights = [
+        '#804000', // Dark Orange
+        '#006400', // Dark Green
+        '#004080', // Dark Blue
+        '#800040', // Dark Pink
+        '#806000', // Dark Yellow
+        '#400080', // Dark Purple
+        '#008080', // Dark Cyan
+        '#404080', // Dark Lavender
+        '#804020', // Dark Coral
+        '#208020', // Dark Lime
+        '#802060', // Dark Hot Pink
+        '#602080', // Dark Vibrant Purple
+        '#204080', // Dark Clear Blue
+        '#408020', // Dark Fresh Green
+        '#806040'  // Dark Warm Sand
+    ];
+
+    // Function to detect if background is dark with better error handling
+	function isDarkBackground(element) {
+		try {
+			let bgColor = window.getComputedStyle(element).backgroundColor;
+			let currentElement = element;
+
+			// Traverse up the DOM tree for non-transparent background
+			while ((bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') &&
+				   currentElement.parentElement &&
+				   currentElement.tagName !== 'HTML') {
+				currentElement = currentElement.parentElement;
+				bgColor = window.getComputedStyle(currentElement).backgroundColor;
+			}
+
+			// If no valid background color is found, assume light background
+			if (bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)' || !bgColor) {
+				return false; // Default to light background
+			}
+
+			// Compute brightness
+			const rgb = bgColor.match(/\d+/g);
+			if (!rgb) return false; // Default to light background if invalid
+			const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+			return brightness < 128;
+		} catch (e) {
+			console.error('Error in background detection:', e);
+			return false; // Default to light background on error
+		}
+	}
+
+    // Get background color of the current selection's container
+    let selectedNode = selection.anchorNode;
+    const isDark = isDarkBackground(selectedNode ? selectedNode.parentElement : document.body);
+    const highlights = isDark ? darkBgHighlights : lightBgHighlights;
+
+    // Remove any existing highlights for this term
+    const existingHighlights = document.querySelectorAll(`span[data-highlight-term="${text}"]`);
+    existingHighlights.forEach(highlight => {
+        const parent = highlight.parentNode;
+        const textNode = document.createTextNode(highlight.textContent);
+        parent.replaceChild(textNode, highlight);
+        parent.normalize();
+    });
+
+    // Get currently active terms (excluding the current one we just removed)
+    const currentHighlights = document.querySelectorAll('span[data-highlight-term]');
+    const activeColors = new Set();
+    currentHighlights.forEach(highlight => {
+        if (highlight.getAttribute('data-highlight-term') !== text) {
+            activeColors.add(highlight.style.backgroundColor);
+        }
+    });
+
+    // Convert colors to hex for comparison with better error handling
+    function rgbToHex(rgb) {
+        try {
+            if (rgb.startsWith('#')) return rgb;
+            const values = rgb.match(/\d+/g);
+            if (!values) return '#000000';
+            return '#' + values.map(x => {
+                const hex = parseInt(x).toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        } catch (e) {
+            return '#000000';
+        }
+    }
+
+    // Get available colors (not currently used by other terms)
+    const usedColors = Array.from(activeColors).map(rgbToHex);
+    const availableColors = highlights.filter(color => !usedColors.includes(color));
+    
+    // Choose a random color from available ones, or any color if none available
+    const highlightColor = availableColors.length > 0 
+        ? availableColors[Math.floor(Math.random() * availableColors.length)]
+        : highlights[Math.floor(Math.random() * highlights.length)];
+
+    // Function to determine text color based on background brightness
+    function getTextColor(bgColor) {
+        try {
+            const hex = bgColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            return brightness > 128 ? '#000000' : '#FFFFFF';
+        } catch (e) {
+            return isDark ? '#FFFFFF' : '#000000';
+        }
+    }
+
+    function searchWithinNode(node, searchText, len, color) {
+        try {
+            if (!node || !node.textContent || node.textContent.trim() === '') {
+                return 0;
+            }
+            var pos, skip = 0;
+            
+            if (node.nodeType === 3) {  // Text node
+                const nodeText = node.data.toUpperCase();
+                searchText = searchText.toUpperCase();
+                pos = nodeText.indexOf(searchText);
+
+                if (pos >= 0) {
+                    // Create highlight span
+                    const spannode = document.createElement("SPAN");
+                    spannode.style.backgroundColor = color;
+                    spannode.style.color = getTextColor(color);
+                    spannode.setAttribute('data-highlight-term', text);
+
+                    // Split text and apply highlight
+                    const middlebit = node.splitText(pos);
+                    const endbit = middlebit.splitText(len);
+                    const middleclone = middlebit.cloneNode(true);
+                    spannode.appendChild(middleclone);
+                    middlebit.parentNode.replaceChild(spannode, middlebit);
+                    count++;
+                    skip = 1;
+                }
+            } else if (node.nodeType === 1 && node.childNodes && // Element node
+                     !/(script|style|textarea)/i.test(node.tagName)) {
+                for (var i = 0; i < node.childNodes.length; i++) {
+                    i += searchWithinNode(node.childNodes[i], searchText, len, color);
+                }
+            }
+            return skip;
+        } catch (e) {
+            console.error('Error in searchWithinNode:', e);
+            return 0;
+        }
+    }
+    
+    // Perform the search and highlighting
+    window.status = "Searching for '" + text + "'...";
+    searchWithinNode(document.body, text, text.length, highlightColor);
+    window.status = "Found " + count + " occurrence" + (count == 1 ? "" : "s") + " of '" + text + "'.";
+
+    // Restore the original selection if it existed
+    if (originalRange) {
+        selection.removeAllRanges();
+        selection.addRange(originalRange);
+    }
+})();
+```
+
+## Version 2
+Added selection preservation while maintaining existing functionality.
+
+**Key changes:**
+
+1. Added at the start:
+```javascript
+const selection = window.getSelection();
+const originalRange = selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
+```
+
+1. Added at the end:
+```javascript
+if (originalRange) {
+    selection.removeAllRanges();
+    selection.addRange(originalRange);
+}
+```
 
 ## Bookmarklet Code (Minified)
 ```javascript
@@ -332,5 +627,222 @@ javascript:(function() {
         selection.removeAllRanges();
         selection.addRange(originalRange);
     }
+})();
+```
+## Old Version 1.0
+
+the problem with persistant highlighting seems to be fixable if I can add a space to the selected term if it does notennd in one and then restore selection without a space.
+
+### Bookmarklet Code (Minified)
+```javascript
+javascript:(function(){var c=0,t=window.getSelection().toString().trim();if(t==null||t.length==0){t=prompt("Search phrase:","");if(t==null||t.length==0)return}const l=['#FFD280','#90EE90','#87CEFA','#FFB6C1','#FFEB7F','#DDA0DD','#80FFEF','#B5B5FF','#FFB399','#99FF99','#FFB3E6','#E6B3FF','#B3D9FF','#CCFFB3','#FFE0B3'],d=['#804000','#006400','#004080','#800040','#806000','#400080','#008080','#404080','#804020','#208020','#802060','#602080','#204080','#408020','#806040'];function i(e){try{let b=window.getComputedStyle(e).backgroundColor,n=e;while((b==='transparent'||b==='rgba(0, 0, 0, 0)')&&n.parentElement&&n.tagName!=='HTML'){n=n.parentElement;b=window.getComputedStyle(n).backgroundColor}if(b==='transparent'||b==='rgba(0, 0, 0, 0)'){let d=!1,c=e;while(c&&c.tagName!=='HTML'){const r=window.getComputedStyle(c).backgroundColor.match(/\d+/g);if(r&&(parseInt(r[0])*299+parseInt(r[1])*587+parseInt(r[2])*114)/1000<128){d=!0;break}c=c.parentElement}if(!d)d=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;return d}const r=b.match(/\d+/g);return r?(parseInt(r[0])*299+parseInt(r[1])*587+parseInt(r[2])*114)/1000<128:!1}catch(e){return!1}}const k=i(window.getSelection().anchorNode?window.getSelection().anchorNode.parentElement:document.body),h=k?d:l,e=document.querySelectorAll(`span[data-highlight-term="${t}"]`);e.forEach(h=>{const p=h.parentNode;p.replaceChild(document.createTextNode(h.textContent),h);p.normalize()});const r=document.querySelectorAll('span[data-highlight-term]'),a=new Set;r.forEach(h=>{h.getAttribute('data-highlight-term')!==t&&a.add(h.style.backgroundColor)});function x(r){try{if(r.startsWith('#'))return r;const v=r.match(/\d+/g);return v?'#'+v.map(x=>{const h=parseInt(x).toString(16);return h.length===1?'0'+h:h}).join(''):'#000000'}catch(e){return'#000000'}}const u=Array.from(a).map(x),v=h.filter(c=>!u.includes(c)),m=v.length>0?v[Math.floor(Math.random()*v.length)]:h[Math.floor(Math.random()*h.length)];function g(c){try{const h=c.replace('#',''),r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return(r*299+g*587+b*114)/1000>128?'#000000':'#FFFFFF'}catch(e){return k?'#FFFFFF':'#000000'}}function s(n,e,l,c){try{if(!n||!n.textContent||n.textContent.trim()==='')return 0;var p,k,d,m,b,q=0;if(n.nodeType===3){p=n.data.toUpperCase().indexOf(e.toUpperCase());if(p>=0){d=document.createElement("SPAN");d.style.backgroundColor=c;d.style.color=g(c);d.setAttribute('data-highlight-term',t);m=n.splitText(p);b=m.splitText(l);k=m.cloneNode(!0);d.appendChild(k);m.parentNode.replaceChild(d,m);++c;q=1}}else if(n.nodeType===1&&n.childNodes&&!/(script|style|textarea)/i.test(n.tagName))for(var i=0;i<n.childNodes.length;i++)i+=s(n.childNodes[i],e,l,c);return q}catch(e){return 0}}window.status="Searching for '"+t+"'...";s(document.body,t,t.length,m);window.status="Found "+c+" occurrence"+(c==1?"":"s")+" of '"+t+"'."})();
+```
+
+### Full Source Code (Commented)
+```javascript
+javascript:(function() {
+    var count = 0, text;
+    
+    // Get selected text or prompt for search phrase
+    text = window.getSelection().toString().trim();
+    if (text == null || text.length == 0) {
+        text = prompt("Search phrase:", "");
+        if (text == null || text.length == 0) return;
+    }
+    
+    // Define color palettes for different backgrounds
+    const lightBgHighlights = [
+        '#FFD280', // Vivid Orange
+        '#90EE90', // Medium Spring Green
+        '#87CEFA', // Bright Sky Blue
+        '#FFB6C1', // Salmon Pink
+        '#FFEB7F', // Rich Yellow
+        '#DDA0DD', // Plum Purple
+        '#80FFEF', // Bright Cyan
+        '#B5B5FF', // Medium Lavender
+        '#FFB399', // Deep Coral
+        '#99FF99', // Bright Lime
+        '#FFB3E6', // Hot Pink
+        '#E6B3FF', // Vibrant Purple
+        '#B3D9FF', // Clear Blue
+        '#CCFFB3', // Fresh Green
+        '#FFE0B3'  // Warm Sand
+    ];
+
+    const darkBgHighlights = [
+        '#804000', // Dark Orange
+        '#006400', // Dark Green
+        '#004080', // Dark Blue
+        '#800040', // Dark Pink
+        '#806000', // Dark Yellow
+        '#400080', // Dark Purple
+        '#008080', // Dark Cyan
+        '#404080', // Dark Lavender
+        '#804020', // Dark Coral
+        '#208020', // Dark Lime
+        '#802060', // Dark Hot Pink
+        '#602080', // Dark Vibrant Purple
+        '#204080', // Dark Clear Blue
+        '#408020', // Dark Fresh Green
+        '#806040'  // Dark Warm Sand
+    ];
+
+    // Function to detect if background is dark with better error handling
+    function isDarkBackground(element) {
+        try {
+            let bgColor = window.getComputedStyle(element).backgroundColor;
+            let currentElement = element;
+            
+            // Traverse up the DOM tree until we find a non-transparent background
+            while ((bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') && 
+                   currentElement.parentElement && 
+                   currentElement.tagName !== 'HTML') {
+                currentElement = currentElement.parentElement;
+                bgColor = window.getComputedStyle(currentElement).backgroundColor;
+            }
+
+            // If we still don't have a valid color, check if we're in dark mode
+            if (bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') {
+                // Check if any parent has a dark background color
+                let isDark = false;
+                currentElement = element;
+                while (currentElement && currentElement.tagName !== 'HTML') {
+                    const color = window.getComputedStyle(currentElement).backgroundColor;
+                    const rgb = color.match(/\d+/g);
+                    if (rgb) {
+                        const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+                        if (brightness < 128) {
+                            isDark = true;
+                            break;
+                        }
+                    }
+                    currentElement = currentElement.parentElement;
+                }
+                // If no dark background found, check system dark mode preference
+                if (!isDark) {
+                    isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                }
+                return isDark;
+            }
+
+            const rgb = bgColor.match(/\d+/g);
+            if (!rgb) return false;
+            const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+            return brightness < 128;
+        } catch (e) {
+            // If there's any error, default to light mode
+            return false;
+        }
+    }
+
+    // Get background color of the current selection's container
+    let selectedNode = window.getSelection().anchorNode;
+    const isDark = isDarkBackground(selectedNode ? selectedNode.parentElement : document.body);
+    const highlights = isDark ? darkBgHighlights : lightBgHighlights;
+
+    // Remove any existing highlights for this term
+    const existingHighlights = document.querySelectorAll(`span[data-highlight-term="${text}"]`);
+    existingHighlights.forEach(highlight => {
+        const parent = highlight.parentNode;
+        const textNode = document.createTextNode(highlight.textContent);
+        parent.replaceChild(textNode, highlight);
+        parent.normalize();
+    });
+
+    // Get currently active terms (excluding the current one we just removed)
+    const currentHighlights = document.querySelectorAll('span[data-highlight-term]');
+    const activeColors = new Set();
+    currentHighlights.forEach(highlight => {
+        if (highlight.getAttribute('data-highlight-term') !== text) {
+            activeColors.add(highlight.style.backgroundColor);
+        }
+    });
+
+    // Convert colors to hex for comparison with better error handling
+    function rgbToHex(rgb) {
+        try {
+            if (rgb.startsWith('#')) return rgb;
+            const values = rgb.match(/\d+/g);
+            if (!values) return '#000000';
+            return '#' + values.map(x => {
+                const hex = parseInt(x).toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        } catch (e) {
+            return '#000000';
+        }
+    }
+
+    // Get available colors (not currently used by other terms)
+    const usedColors = Array.from(activeColors).map(rgbToHex);
+    const availableColors = highlights.filter(color => !usedColors.includes(color));
+    
+    // Choose a random color from available ones, or any color if none available
+    const highlightColor = availableColors.length > 0 
+        ? availableColors[Math.floor(Math.random() * availableColors.length)]
+        : highlights[Math.floor(Math.random() * highlights.length)];
+
+    // Function to determine text color based on background brightness
+    function getTextColor(bgColor) {
+        try {
+            const hex = bgColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            return brightness > 128 ? '#000000' : '#FFFFFF';
+        } catch (e) {
+            return isDark ? '#FFFFFF' : '#000000';
+        }
+    }
+
+    function searchWithinNode(node, searchText, len, color) {
+        try {
+            var pos, skip, spannode, middlebit, endbit, middleclone;
+            skip = 0;
+
+            // Skip empty nodes
+            if (!node || !node.textContent || node.textContent.trim() === '') {
+                return 0;
+            }
+
+            if (node.nodeType === 3) {  // Text node
+                const nodeText = node.data.toUpperCase();
+                searchText = searchText.toUpperCase();
+                pos = nodeText.indexOf(searchText);
+
+                if (pos >= 0) {
+                    // Create highlight span
+                    spannode = document.createElement("SPAN");
+                    spannode.style.backgroundColor = color;
+                    spannode.style.color = getTextColor(color);
+                    spannode.setAttribute('data-highlight-term', text);
+
+                    // Split text and apply highlight
+                    middlebit = node.splitText(pos);
+                    endbit = middlebit.splitText(len);
+                    middleclone = middlebit.cloneNode(true);
+                    spannode.appendChild(middleclone);
+                    middlebit.parentNode.replaceChild(spannode, middlebit);
+                    count++;
+                    skip = 1;
+                }
+            } else if (node.nodeType === 1 && node.childNodes && // Element node
+                     !/(script|style|textarea)/i.test(node.tagName)) {
+                for (var i = 0; i < node.childNodes.length; i++) {
+                    var childNode = node.childNodes[i];
+                    i += searchWithinNode(childNode, searchText, len, color);
+                }
+            }
+            return skip;
+        } catch (e) {
+            console.error('Error in searchWithinNode:', e);
+            return 0;
+        }
+    }
+    
+    window.status = "Searching for '" + text + "'...";
+    searchWithinNode(document.body, text, text.length, highlightColor);
+    window.status = "Found " + count + " occurrence" + (count == 1 ? "" : "s") + " of '" + text + "'.";
 })();
 ```
