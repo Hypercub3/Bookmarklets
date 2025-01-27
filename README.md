@@ -1,5 +1,5 @@
 # Bookmarklets
-A collection of bookmarklets. mine and others. aiming for the best parts and ideas from other bookmarklets.
+A collection of bookmarklets. made by me and forked from others. aiming for the best.
 
 
 
