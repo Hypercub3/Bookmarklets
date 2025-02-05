@@ -18,18 +18,18 @@
     - [2. **Traversal Up the DOM Tree**:](#2-traversal-up-the-dom-tree)
     - [3. **Error Handling**:](#3-error-handling)
     - [4. **Invalid RGB Handling**:](#4-invalid-rgb-handling)
-  - [Bookmarklet Code (Minified)](#bookmarklet-code-minified)
-  - [Full Source Code (Commented)](#full-source-code-commented)
+    - [Bookmarklet Code (Minified)](#bookmarklet-code-minified)
+    - [Full Source Code (Commented)](#full-source-code-commented)
   - [Version 2](#version-2)
-  - [Bookmarklet Code (Minified)](#bookmarklet-code-minified-1)
-  - [Full Source Code (Commented)](#full-source-code-commented-1)
+    - [Bookmarklet Code (Minified)](#bookmarklet-code-minified-1)
+    - [Full Source Code (Commented)](#full-source-code-commented-1)
   - [Old Version 1.0](#old-version-10)
     - [Bookmarklet Code (Minified)](#bookmarklet-code-minified-2)
     - [Full Source Code (Commented)](#full-source-code-commented-2)
 
 ## GitHub Description
 
-Adaptive Text Highlighter is a JavaScript bookmarklet that highlights text on webpages, automatically choosing suitable highlight colors for both light and dark backgrounds. You can highlight text by selecting it or by entering a search term, and it supports multiple terms at once, each with a distinct color. Re-searching a term updates its existing highlight to a new color. The bookmarklet uses background detection, manages different color palettes, and implements DOM traversal to handle large pages reliably.
+Adaptive Text Highlighter is a JavaScript bookmarklet that highlights text on webpages, automatically choosing suitable highlight colors for both light and dark backgrounds. You can highlight text by selecting it or by entering a search term, and it supports multiple terms, each with a distinct color. Re-searching a term updates its existing highlight to a new color. The bookmarklet uses background detection, manages different color palettes, and implements DOM traversal to handle large pages reliably.
 
 ### Versioning notes
 v1.2
@@ -192,13 +192,13 @@ Improved the `isDarkBackground` function:
 ---
 
 These changes ensure that the bookmarklet handles simple, minimally styled pages (like the uploaded example) more robustly and avoids incorrectly assuming a dark background when there’s no clear styling.
-## Bookmarklet Code (Minified)
+### Bookmarklet Code (Minified)
 ```javascript
 javascript:(function(){var count=0,text;const selection=window.getSelection(),originalRange=selection.rangeCount>0?selection.getRangeAt(0).cloneRange():null;text=selection.toString().trim();if(text==null||text.length==0){text=prompt("Search phrase:","");if(text==null||text.length==0)return;}const lightBgHighlights=["#FFD280","#90EE90","#87CEFA","#FFB6C1","#FFEB7F","#DDA0DD","#80FFEF","#B5B5FF","#FFB399","#99FF99","#FFB3E6","#E6B3FF","#B3D9FF","#CCFFB3","#FFE0B3"],darkBgHighlights=["#804000","#006400","#004080","#800040","#806000","#400080","#008080","#404080","#804020","#208020","#802060","#602080","#204080","#408020","#806040"];function isDarkBackground(element){try{let bgColor=window.getComputedStyle(element).backgroundColor,currentElement=element;while((bgColor==="transparent"||bgColor==="rgba(0, 0, 0, 0)")&&currentElement.parentElement&&currentElement.tagName!=="HTML"){currentElement=currentElement.parentElement;bgColor=window.getComputedStyle(currentElement).backgroundColor;}if(bgColor==="transparent"||bgColor==="rgba(0, 0, 0, 0)"||!bgColor)return false;const rgb=bgColor.match(/\d+/g);if(!rgb)return false;const brightness=(parseInt(rgb[0])*299+parseInt(rgb[1])*587+parseInt(rgb[2])*114)/1000;return brightness<128;}catch(e){console.error("Error in background detection:",e);return false;}}let selectedNode=selection.anchorNode,isDark=isDarkBackground(selectedNode?selectedNode.parentElement:document.body),highlights=isDark?darkBgHighlights:lightBgHighlights;const existingHighlights=document.querySelectorAll(`span[data-highlight-term="${text}"]`);existingHighlights.forEach(highlight=>{const parent=highlight.parentNode,textNode=document.createTextNode(highlight.textContent);parent.replaceChild(textNode,highlight);parent.normalize();});const currentHighlights=document.querySelectorAll("span[data-highlight-term]"),activeColors=new Set;currentHighlights.forEach(highlight=>{if(highlight.getAttribute("data-highlight-term")!==text)activeColors.add(highlight.style.backgroundColor);});function rgbToHex(rgb){try{if(rgb.startsWith("#"))return rgb;const values=rgb.match(/\d+/g);if(!values)return"#000000";return"#"+values.map(x=>{const hex=parseInt(x).toString(16);return hex.length===1?"0"+hex:hex;}).join("");}catch(e){return"#000000";}}const usedColors=Array.from(activeColors).map(rgbToHex),availableColors=highlights.filter(color=>!usedColors.includes(color)),highlightColor=availableColors.length>0?availableColors[Math.floor(Math.random()*availableColors.length)]:highlights[Math.floor(Math.random()*highlights.length)];function getTextColor(bgColor){try{const hex=bgColor.replace("#",""),r=parseInt(hex.substr(0,2),16),g=parseInt(hex.substr(2,2),16),b=parseInt(hex.substr(4,2),16),brightness=(r*299+g*587+b*114)/1000;return brightness>128?"#000000":"#FFFFFF";}catch(e){return isDark?"#FFFFFF":"#000000";}}function searchWithinNode(node,searchText,len,color){try{if(!node||!node.textContent||node.textContent.trim()==="")return 0;var pos,skip=0;if(node.nodeType===3){const nodeText=node.data.toUpperCase();searchText=searchText.toUpperCase();pos=nodeText.indexOf(searchText);if(pos>=0){const spannode=document.createElement("SPAN");spannode.style.backgroundColor=color;spannode.style.color=getTextColor(color);spannode.setAttribute("data-highlight-term",text);const middlebit=node.splitText(pos),endbit=middlebit.splitText(len),middleclone=middlebit.cloneNode(true);spannode.appendChild(middleclone);middlebit.parentNode.replaceChild(spannode,middlebit);count++;skip=1;}}else if(node.nodeType===1&&node.childNodes&&!/(script|style|textarea)/i.test(node.tagName)){for(var i=0;i<node.childNodes.length;i++)i+=searchWithinNode(node.childNodes[i],searchText,len,color);}}catch(e){console.error("Error in searchWithinNode:",e);return 0;}return skip;}window.status="Searching for '"+text+"'...";searchWithinNode(document.body,text,text.length,highlightColor);window.status="Found "+count+" occurrence"+(count==1?"":"s")+" of '"+text+"'.";if(originalRange){selection.removeAllRanges();selection.addRange(originalRange);}})();
 
 ```
 
-## Full Source Code (Commented)
+### Full Source Code (Commented)
 ```javascript
 javascript:(function() {
     var count = 0, text;
@@ -415,12 +415,12 @@ if (originalRange) {
 }
 ```
 
-## Bookmarklet Code (Minified)
+### Bookmarklet Code (Minified)
 ```javascript
 javascript:(function(){var c=0,t,s=window.getSelection(),r=s.rangeCount>0?s.getRangeAt(0).cloneRange():null;t=s.toString().trim();if(t==null||t.length==0){t=prompt("Search phrase:","");if(t==null||t.length==0)return}const l=['#FFD280','#90EE90','#87CEFA','#FFB6C1','#FFEB7F','#DDA0DD','#80FFEF','#B5B5FF','#FFB399','#99FF99','#FFB3E6','#E6B3FF','#B3D9FF','#CCFFB3','#FFE0B3'],d=['#804000','#006400','#004080','#800040','#806000','#400080','#008080','#404080','#804020','#208020','#802060','#602080','#204080','#408020','#806040'];function i(e){try{let b=window.getComputedStyle(e).backgroundColor,n=e;while((b==='transparent'||b==='rgba(0, 0, 0, 0)')&&n.parentElement&&n.tagName!=='HTML'){n=n.parentElement;b=window.getComputedStyle(n).backgroundColor}if(b==='transparent'||b==='rgba(0, 0, 0, 0)'){let d=!1,c=e;while(c&&c.tagName!=='HTML'){const r=window.getComputedStyle(c).backgroundColor.match(/\d+/g);if(r&&(parseInt(r[0])*299+parseInt(r[1])*587+parseInt(r[2])*114)/1000<128){d=!0;break}c=c.parentElement}return d}const r=b.match(/\d+/g);return r?(parseInt(r[0])*299+parseInt(r[1])*587+parseInt(r[2])*114)/1000<128:!1}catch(e){return!1}}const k=i(s.anchorNode?s.anchorNode.parentElement:document.body),h=k?d:l,e=document.querySelectorAll(`span[data-highlight-term="${t}"]`);e.forEach(h=>{const p=h.parentNode;p.replaceChild(document.createTextNode(h.textContent),h);p.normalize()});const a=document.querySelectorAll('span[data-highlight-term]'),v=new Set;a.forEach(h=>{h.getAttribute('data-highlight-term')!==t&&v.add(h.style.backgroundColor)});function x(r){try{if(r.startsWith('#'))return r;const v=r.match(/\d+/g);return v?'#'+v.map(x=>{const h=parseInt(x).toString(16);return h.length===1?'0'+h:h}).join(''):'#000000'}catch(e){return'#000000'}}const u=Array.from(v).map(x),w=h.filter(c=>!u.includes(c)),m=w.length>0?w[Math.floor(Math.random()*w.length)]:h[Math.floor(Math.random()*h.length)];function g(c){try{const h=c.replace('#',''),r=parseInt(h.substr(0,2),16),g=parseInt(h.substr(2,2),16),b=parseInt(h.substr(4,2),16);return(r*299+g*587+b*114)/1000>128?'#000000':'#FFFFFF'}catch(e){return k?'#FFFFFF':'#000000'}}function n(o,e,l,c){try{if(!o||!o.textContent||o.textContent.trim()==='')return 0;var p,q=0;if(o.nodeType===3){const y=o.data.toUpperCase();p=y.indexOf(e.toUpperCase());if(p>=0){const d=document.createElement("SPAN");d.style.backgroundColor=c;d.style.color=g(c);d.setAttribute('data-highlight-term',t);const m=o.splitText(p),b=m.splitText(l),z=m.cloneNode(!0);d.appendChild(z);m.parentNode.replaceChild(d,m);++c;q=1}}else if(o.nodeType===1&&o.childNodes&&!/(script|style|textarea)/i.test(o.tagName))for(var i=0;i<o.childNodes.length;i++)i+=n(o.childNodes[i],e,l,c);return q}catch(e){return 0}}window.status="Searching for '"+t+"'...";n(document.body,t,t.length,m);window.status="Found "+c+" occurrence"+(c==1?"":"s")+" of '"+t+"'.";if(r){s.removeAllRanges();s.addRange(r)}})();
 ```
 
-## Full Source Code (Commented)
+### Full Source Code (Commented)
 ```javascript
 javascript:(function() {
     var count = 0, text;
@@ -631,7 +631,7 @@ javascript:(function() {
 ```
 ## Old Version 1.0
 
-the problem with persistant highlighting seems to be fixable if I can add a space to the selected term if it does notennd in one and then restore selection without a space.
+the problem with persistant highlighting seems to be fixable if I can add a space to the selected term if it does not end in a space and then restore selection without a space.
 
 ### Bookmarklet Code (Minified)
 ```javascript
