@@ -3,6 +3,8 @@
 - [Bookmarklets for searching the current site/URL](#bookmarklets-for-searching-the-current-siteurl)
   - [Description](#description)
   - [Google site search](#google-site-search)
+    - [New Window:](#new-window)
+    - [Same Window:](#same-window)
   - [Bing site search:](#bing-site-search)
   - [Yandex site search](#yandex-site-search)
     - [Yendex search all pages starting with the current URL](#yendex-search-all-pages-starting-with-the-current-url)
@@ -20,6 +22,8 @@ bookmarklets that search the current website or URL (in Yandex version). The pro
 
 Site Search [Google] ➤
 
+### New Window:
+
 **Minified Code (for bookmarklet)**
 ```javascript
 javascript:(function(){var s=window.getSelection().toString().trim();var p=prompt('Search term:',s);if(p)window.open('http://www.google.com/search?q=site:'+document.location.href.split('/')[2]+' '+encodeURIComponent(p),'_blank')})();
@@ -32,6 +36,25 @@ javascript:(function(){
     var p = prompt('Search term:', selectedText);
     if(p){
         window.open('http://www.google.com/search?q=site:' + document.location.href.split('/')[2] + ' ' + encodeURIComponent(p), '_blank');
+    }
+})();
+```
+
+### Same Window:
+
+The only change I made was replacing `'_blank'` with `'_self'` as the second parameter to `window.open()`. 
+
+**Minified Code**
+```javascript
+javascript:(function(){var selectedText=window.getSelection().toString().trim(),p=prompt('Search term:',selectedText);if(p){window.open('http://www.google.com/search?q=site:'+document.location.href.split('/')[2]+' '+encodeURIComponent(p),'_self');}})();
+```
+**Formatted Code**
+```javascript
+javascript:(function(){
+    var selectedText = window.getSelection().toString().trim();
+    var p = prompt('Search term:', selectedText);
+    if(p){
+        window.open('http://www.google.com/search?q=site:' + document.location.href.split('/')[2] + ' ' + encodeURIComponent(p), '_self');
     }
 })();
 ```
