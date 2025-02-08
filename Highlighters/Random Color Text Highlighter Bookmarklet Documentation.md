@@ -27,111 +27,120 @@ This bookmarklet allows users to highlight text on any webpage with randomly sel
 ## Full Commented Code
 ```javascript
 javascript:(function() {
-    var count = 0, text;
-    
-    // Store the current selection before any modifications
-    const selection = window.getSelection();
-    const originalRange = selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
-   
-    // Get selected text or prompt for search phrase
-    text = selection.toString().trim();
-    if (text == null || text.length == 0) {
-        text = prompt("Search phrase:", "");
-        if (text == null || text.length == 0) return;
+  // Initialize variables
+  var count = 0;
+  var text;
+  
+  // Store the current text selection
+  const selection = window.getSelection();
+  const originalRange = selection.rangeCount > 0 
+    ? selection.getRangeAt(0).cloneRange() 
+    : null;
+
+  // Get selected text or prompt user
+  text = selection.toString().trim();
+  if (!text) {
+    text = prompt("Search phrase:", "");
+    if (!text) return;
+  }
+
+  // Available highlight colors
+  const highlights = [
+    '#FFD280', '#90EE90', '#87CEFA', '#FFB6C1', 
+    '#FFEB7F', '#DDA0DD', '#80FFEF', '#B5B5FF',
+    '#FFB399', '#99FF99', '#FFB3E6', '#E6B3FF', 
+    '#B3D9FF', '#CCFFB3', '#FFE0B3'
+  ];
+
+  // Remove existing highlights for the same search term
+  const existingHighlights = document.querySelectorAll(
+    `span[data-highlight-term="${text}"]`
+  );
+  existingHighlights.forEach(highlight => {
+    const parent = highlight.parentNode;
+    parent.replaceChild(
+      document.createTextNode(highlight.textContent),
+      highlight
+    );
+    parent.normalize();
+  });
+
+  // Track colors already in use
+  const currentHighlights = document.querySelectorAll('span[data-highlight-term]');
+  const activeColors = new Set();
+  currentHighlights.forEach(highlight => {
+    if (highlight.getAttribute('data-highlight-term') !== text) {
+      activeColors.add(highlight.style.backgroundColor);
     }
-   
-    // Define array of highlight-friendly colors
-    const highlights = [
-        '#FFD280', // Vivid Orange
-        '#90EE90', // Medium Spring Green
-        '#87CEFA', // Bright Sky Blue
-        '#FFB6C1', // Salmon Pink
-        '#FFEB7F', // Rich Yellow
-        '#DDA0DD', // Plum Purple
-        '#80FFEF', // Bright Cyan
-        '#B5B5FF', // Medium Lavender
-        '#FFB399', // Deep Coral
-        '#99FF99', // Bright Lime
-        '#FFB3E6', // Hot Pink
-        '#E6B3FF', // Vibrant Purple
-        '#B3D9FF', // Clear Blue
-        '#CCFFB3', // Fresh Green
-        '#FFE0B3'  // Warm Sand
-    ];
+  });
 
-    // Remove any existing highlights for this term
-    const existingHighlights = document.querySelectorAll(`span[data-highlight-term="${text}"]`);
-    existingHighlights.forEach(highlight => {
-        const parent = highlight.parentNode;
-        parent.replaceChild(document.createTextNode(highlight.textContent), highlight);
-        parent.normalize();
-    });
+  // Convert RGB color to hex
+  function rgbToHex(rgb) {
+    if (rgb.startsWith('#')) return rgb;
+    const values = rgb.match(/\d+/g);
+    if (!values) return '#000000';
+    return '#' + values.map(x => {
+      const hex = parseInt(x).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+  }
 
-    // Get currently active terms (excluding the current one we just removed)
-    const currentHighlights = document.querySelectorAll('span[data-highlight-term]');
-    const activeColors = new Set();
-    currentHighlights.forEach(highlight => {
-        if (highlight.getAttribute('data-highlight-term') !== text) {
-            activeColors.add(highlight.style.backgroundColor);
-        }
-    });
+  // Choose a random unused color
+  const usedColors = Array.from(activeColors).map(rgbToHex);
+  const availableColors = highlights.filter(
+    color => !usedColors.includes(color)
+  );
+  const highlightColor = availableColors.length > 0
+    ? availableColors[Math.floor(Math.random() * availableColors.length)]
+    : highlights[Math.floor(Math.random() * highlights.length)];
 
-    // Convert colors to hex for comparison
-    function rgbToHex(rgb) {
-        if (rgb.startsWith('#')) return rgb;
-        const values = rgb.match(/\d+/g);
-        if (!values) return '#000000';
-        return '#' + values.map(x => {
-            const hex = parseInt(x).toString(16);
-            return hex.length === 1 ? '0' + hex : hex;
-        }).join('');
+  // Recursive function to search and highlight text within nodes
+  function searchWithinNode(node, searchText, length) {
+    var pos, skip, spannode, middlebit, endbit, middleclone;
+    skip = 0;
+
+    if (node.nodeType == 3) { // Text node
+      pos = node.data.toUpperCase().indexOf(searchText);
+      if (pos >= 0) {
+        // Create highlight span
+        spannode = document.createElement("SPAN");
+        spannode.style.backgroundColor = highlightColor;
+        spannode.style.color = '#000000';
+        spannode.setAttribute('data-highlight-term', text);
+
+        // Split text node and insert highlight
+        middlebit = node.splitText(pos);
+        endbit = middlebit.splitText(length);
+        middleclone = middlebit.cloneNode(true);
+        spannode.appendChild(middleclone);
+        middlebit.parentNode.replaceChild(spannode, middlebit);
+        ++count;
+        skip = 1;
+      }
+    } 
+    // Recursively search child nodes
+    else if (node.nodeType == 1 && 
+             node.childNodes && 
+             node.tagName.toUpperCase() != "SCRIPT" && 
+             node.tagName.toUpperCase() != "STYLE") {
+      for (var child = 0; child < node.childNodes.length; ++child) {
+        child = child + searchWithinNode(node.childNodes[child], searchText, length);
+      }
     }
+    return skip;
+  }
 
-    // Get available colors (not currently used by other terms)
-    const usedColors = Array.from(activeColors).map(rgbToHex);
-    const availableColors = highlights.filter(color => !usedColors.includes(color));
-   
-    // Choose a random color from available ones, or any color if none available
-    const highlightColor = availableColors.length > 0
-        ? availableColors[Math.floor(Math.random() * availableColors.length)]
-        : highlights[Math.floor(Math.random() * highlights.length)];
-   
-    function searchWithinNode(node, te, len) {
-        var pos, skip, spannode, middlebit, endbit, middleclone;
-        skip = 0;
-        if (node.nodeType == 3) {
-            pos = node.data.toUpperCase().indexOf(te);
-            if (pos >= 0) {
-                spannode = document.createElement("SPAN");
-                spannode.style.backgroundColor = highlightColor;
-                spannode.style.color = '#000000'; // Set text color to black
-                spannode.setAttribute('data-highlight-term', text);
-                middlebit = node.splitText(pos);
-                endbit = middlebit.splitText(len);
-                middleclone = middlebit.cloneNode(true);
-                spannode.appendChild(middleclone);
-                middlebit.parentNode.replaceChild(spannode, middlebit);
-                ++count;
-                skip = 1;
-            }
-        }
-        else if (node.nodeType == 1 && node.childNodes && node.tagName.toUpperCase() != "SCRIPT" && node.tagName.toUpperCase() != "STYLE") {
-            for (var child = 0; child < node.childNodes.length; ++child) {
-                child = child + searchWithinNode(node.childNodes[child], te, len);
-            }
-        }
-        return skip;
-    }
-   
-    window.status = "Searching for '" + text + "'...";
-    searchWithinNode(document.body, text.toUpperCase(), text.length);
-    window.status = "Found " + count + " occurrence" + (count == 1 ? "" : "s") + " of '" + text + "'.";
+  // Execute search
+  window.status = "Searching for '" + text + "'...";
+  searchWithinNode(document.body, text.toUpperCase(), text.length);
+  window.status = "Found " + count + " occurrence" + 
+    (count == 1 ? "" : "s") + " of '" + text + "'.";
 
-    // Restore the original selection
-    if (originalRange) {
-        selection.removeAllRanges();
-        selection.addRange(originalRange);
-    }
+  // Restore original text selection
+  if (originalRange) {
+    selection.removeAllRanges();
+    selection.addRange(originalRange);
+  }
 })();
 ```
 
