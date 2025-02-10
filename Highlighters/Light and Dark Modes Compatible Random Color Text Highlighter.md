@@ -14,12 +14,13 @@
   - [Technical Details](#technical-details)
     - [Performance Considerations](#performance-considerations)
   - [Version 3](#version-3)
-    - [1. **Fallback to Light Background**:](#1-fallback-to-light-background)
-    - [2. **Traversal Up the DOM Tree**:](#2-traversal-up-the-dom-tree)
-    - [3. **Error Handling**:](#3-error-handling)
-    - [4. **Invalid RGB Handling**:](#4-invalid-rgb-handling)
     - [Bookmarklet Code (Minified)](#bookmarklet-code-minified)
     - [Full Source Code (Commented)](#full-source-code-commented)
+    - [**Key changes:**](#key-changes)
+      - [1. Fallback to Light Background:](#1-fallback-to-light-background)
+      - [2. Traversal Up the DOM Tree:](#2-traversal-up-the-dom-tree)
+      - [3. Error Handling:](#3-error-handling)
+      - [4. Invalid RGB Handling:](#4-invalid-rgb-handling)
   - [Version 2](#version-2)
     - [Bookmarklet Code (Minified)](#bookmarklet-code-minified-1)
     - [Full Source Code (Commented)](#full-source-code-commented-1)
@@ -135,63 +136,7 @@ A JavaScript bookmarklet that highlights searched text on webpages, for both lig
 - Quick background detection
 - Optimized DOM manipulation 
 ## Version 3
-Added selection preservation while maintaining existing functionality.
 
-**Key changes:**
-Improved the `isDarkBackground` function:
-
-### 1. **Fallback to Light Background**:
-   - If the computed background color remains unclear (e.g., `transparent`, `rgba(0, 0, 0, 0)`, or not found), the function now defaults to assuming a **light background**.
-   - This prevents the script from incorrectly assuming a dark background in the absence of explicit styling.
-
-   **Added Code**:
-   ```javascript
-   if (bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)' || !bgColor) {
-       return false; // Default to light background
-   }
-   ```
-
----
-
-### 2. **Traversal Up the DOM Tree**:
-   - Retained the logic to traverse up the DOM tree to look for the first non-transparent background, but ensured it stops correctly at the `<HTML>` tag.
-
-   **Modified Check**:
-   ```javascript
-   while ((bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') &&
-          currentElement.parentElement &&
-          currentElement.tagName !== 'HTML') {
-       currentElement = currentElement.parentElement;
-       bgColor = window.getComputedStyle(currentElement).backgroundColor;
-   }
-   ```
-
----
-
-### 3. **Error Handling**:
-   - Wrapped the function in a `try-catch` block to handle potential errors gracefully. If an error occurs, the function defaults to assuming a **light background**.
-
-   **Added Code**:
-   ```javascript
-   } catch (e) {
-       console.error('Error in background detection:', e);
-       return false; // Default to light background on error
-   }
-   ```
-
----
-
-### 4. **Invalid RGB Handling**:
-   - Added a check to handle invalid or malformed RGB values more gracefully. If the computed color doesn't provide valid RGB values, the function defaults to assuming a light background.
-
-   **Added Code**:
-   ```javascript
-   if (!rgb) return false; // Default to light background if invalid
-   ```
-
----
-
-These changes ensure that the bookmarklet handles simple, minimally styled pages (like the uploaded example) more robustly and avoids incorrectly assuming a dark background when there’s no clear styling.
 ### Bookmarklet Code (Minified)
 ```javascript
 javascript:(function(){var count=0,text;const selection=window.getSelection(),originalRange=selection.rangeCount>0?selection.getRangeAt(0).cloneRange():null;text=selection.toString().trim();if(text==null||text.length==0){text=prompt("Search phrase:","");if(text==null||text.length==0)return;}const lightBgHighlights=["#FFD280","#90EE90","#87CEFA","#FFB6C1","#FFEB7F","#DDA0DD","#80FFEF","#B5B5FF","#FFB399","#99FF99","#FFB3E6","#E6B3FF","#B3D9FF","#CCFFB3","#FFE0B3"],darkBgHighlights=["#804000","#006400","#004080","#800040","#806000","#400080","#008080","#404080","#804020","#208020","#802060","#602080","#204080","#408020","#806040"];function isDarkBackground(element){try{let bgColor=window.getComputedStyle(element).backgroundColor,currentElement=element;while((bgColor==="transparent"||bgColor==="rgba(0, 0, 0, 0)")&&currentElement.parentElement&&currentElement.tagName!=="HTML"){currentElement=currentElement.parentElement;bgColor=window.getComputedStyle(currentElement).backgroundColor;}if(bgColor==="transparent"||bgColor==="rgba(0, 0, 0, 0)"||!bgColor)return false;const rgb=bgColor.match(/\d+/g);if(!rgb)return false;const brightness=(parseInt(rgb[0])*299+parseInt(rgb[1])*587+parseInt(rgb[2])*114)/1000;return brightness<128;}catch(e){console.error("Error in background detection:",e);return false;}}let selectedNode=selection.anchorNode,isDark=isDarkBackground(selectedNode?selectedNode.parentElement:document.body),highlights=isDark?darkBgHighlights:lightBgHighlights;const existingHighlights=document.querySelectorAll(`span[data-highlight-term="${text}"]`);existingHighlights.forEach(highlight=>{const parent=highlight.parentNode,textNode=document.createTextNode(highlight.textContent);parent.replaceChild(textNode,highlight);parent.normalize();});const currentHighlights=document.querySelectorAll("span[data-highlight-term]"),activeColors=new Set;currentHighlights.forEach(highlight=>{if(highlight.getAttribute("data-highlight-term")!==text)activeColors.add(highlight.style.backgroundColor);});function rgbToHex(rgb){try{if(rgb.startsWith("#"))return rgb;const values=rgb.match(/\d+/g);if(!values)return"#000000";return"#"+values.map(x=>{const hex=parseInt(x).toString(16);return hex.length===1?"0"+hex:hex;}).join("");}catch(e){return"#000000";}}const usedColors=Array.from(activeColors).map(rgbToHex),availableColors=highlights.filter(color=>!usedColors.includes(color)),highlightColor=availableColors.length>0?availableColors[Math.floor(Math.random()*availableColors.length)]:highlights[Math.floor(Math.random()*highlights.length)];function getTextColor(bgColor){try{const hex=bgColor.replace("#",""),r=parseInt(hex.substr(0,2),16),g=parseInt(hex.substr(2,2),16),b=parseInt(hex.substr(4,2),16),brightness=(r*299+g*587+b*114)/1000;return brightness>128?"#000000":"#FFFFFF";}catch(e){return isDark?"#FFFFFF":"#000000";}}function searchWithinNode(node,searchText,len,color){try{if(!node||!node.textContent||node.textContent.trim()==="")return 0;var pos,skip=0;if(node.nodeType===3){const nodeText=node.data.toUpperCase();searchText=searchText.toUpperCase();pos=nodeText.indexOf(searchText);if(pos>=0){const spannode=document.createElement("SPAN");spannode.style.backgroundColor=color;spannode.style.color=getTextColor(color);spannode.setAttribute("data-highlight-term",text);const middlebit=node.splitText(pos),endbit=middlebit.splitText(len),middleclone=middlebit.cloneNode(true);spannode.appendChild(middleclone);middlebit.parentNode.replaceChild(spannode,middlebit);count++;skip=1;}}else if(node.nodeType===1&&node.childNodes&&!/(script|style|textarea)/i.test(node.tagName)){for(var i=0;i<node.childNodes.length;i++)i+=searchWithinNode(node.childNodes[i],searchText,len,color);}}catch(e){console.error("Error in searchWithinNode:",e);return 0;}return skip;}window.status="Searching for '"+text+"'...";searchWithinNode(document.body,text,text.length,highlightColor);window.status="Found "+count+" occurrence"+(count==1?"":"s")+" of '"+text+"'.";if(originalRange){selection.removeAllRanges();selection.addRange(originalRange);}})();
@@ -395,6 +340,65 @@ javascript:(function() {
     }
 })();
 ```
+
+Added selection preservation while maintaining existing functionality.
+
+### **Key changes:**
+Improved the `isDarkBackground` function:
+
+#### 1. Fallback to Light Background:
+   - If the computed background color remains unclear (e.g., `transparent`, `rgba(0, 0, 0, 0)`, or not found), the function now defaults to assuming a **light background**.
+   - This prevents the script from incorrectly assuming a dark background in the absence of explicit styling.
+
+   **Added Code**:
+   ```javascript
+   if (bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)' || !bgColor) {
+       return false; // Default to light background
+   }
+   ```
+
+---
+
+#### 2. Traversal Up the DOM Tree:
+   - Retained the logic to traverse up the DOM tree to look for the first non-transparent background, but ensured it stops correctly at the `<HTML>` tag.
+
+   **Modified Check**:
+   ```javascript
+   while ((bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') &&
+          currentElement.parentElement &&
+          currentElement.tagName !== 'HTML') {
+       currentElement = currentElement.parentElement;
+       bgColor = window.getComputedStyle(currentElement).backgroundColor;
+   }
+   ```
+
+---
+
+#### 3. Error Handling:
+   - Wrapped the function in a `try-catch` block to handle potential errors gracefully. If an error occurs, the function defaults to assuming a **light background**.
+
+   **Added Code**:
+   ```javascript
+   } catch (e) {
+       console.error('Error in background detection:', e);
+       return false; // Default to light background on error
+   }
+   ```
+
+---
+
+#### 4. Invalid RGB Handling:
+   - Added a check to handle invalid or malformed RGB values more gracefully. If the computed color doesn't provide valid RGB values, the function defaults to assuming a light background.
+
+   **Added Code**:
+   ```javascript
+   if (!rgb) return false; // Default to light background if invalid
+   ```
+
+---
+
+These changes ensure that the bookmarklet handles simple, minimally styled pages (like the uploaded example) more robustly and avoids incorrectly assuming a dark background when there’s no clear styling.
+
 
 ## Version 2
 Added selection preservation while maintaining existing functionality.
