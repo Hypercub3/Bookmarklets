@@ -342,8 +342,6 @@ javascript:(function() {
 })();
 ```
 
-Added selection preservation while maintaining existing functionality.
-
 ### Key changes:
 Improved the `isDarkBackground` function:
 
