@@ -3,6 +3,7 @@
 - [Flattened full code with console logs](#flattened-full-code-with-console-logs)
 - [Full source code with console logs](#full-source-code-with-console-logs)
 - [Color Generation Logic](#color-generation-logic)
+- [Prompt Specification](#prompt-specification)
 
 A bookmarklet that highlights searched text on webpages, for both light and dark backgrounds. selected text is used for highlighted terms with fallback to a search prompt to enter a phrase manually. colors are randomly chosen using a randomly generated pastel HSLA color. HSLA allows for highlighting on both light and dark backgrounds. When re-searching an already highlighted term, it replaces existing highlights with a new color. That means that if you keep clicking with a term selected then the color will continue to change, so you can pick a color you like.
 
@@ -327,3 +328,20 @@ function generatePastelColor() {
 ```
 The color generation logic generates a random pastel color using the HSLA color model. The hue is randomly selected from 0 to 359 degrees, while saturation is set to 100% and lightness to 50%, with an alpha value of 0.3 for transparency. This ensures that the highlight color is vibrant yet soft enough to be visible on both light and dark backgrounds.
 
+
+## Prompt Specification
+
+make a bookmarklet that highlights all of the terms matching the selected text. If no text is selected prompt the user to enter a term to highlight
+* allow for multiple highlighted terms with different colors
+* allow for highlighting the same term in a different color when the bookmark is clicked again. Removing the current highlights for that term and reapply a newly generated color
+* make it case insensitive
+* preserve selected text after a term is highlighted so that the user can repeatedly click the bookmarklet to select different colors.
+
+use the following color selection logic:
+
+// Generate a random hue (0-359)
+var hue = Math.floor(Math.random() * 360);
+
+// Create a pastel color using opacity
+// Use HSLA with full saturation and lightness, but with opacity to create pastel effect
+var pastel = 'hsla(' + hue + ', 100%, 50%, 0.3)';
