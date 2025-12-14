@@ -326,3 +326,4 @@ function generatePastelColor() {
 }
 ```
 The color generation logic generates a random pastel color using the HSLA color model. The hue is randomly selected from 0 to 359 degrees, while saturation is set to 100% and lightness to 50%, with an alpha value of 0.3 for transparency. This ensures that the highlight color is vibrant yet soft enough to be visible on both light and dark backgrounds.
+
