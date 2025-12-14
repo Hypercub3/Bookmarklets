@@ -2,7 +2,7 @@
 - [Minified Code (for bookmarklet)](#minified-code-for-bookmarklet)
 - [Flattened full code with console logs](#flattened-full-code-with-console-logs)
 - [Full source code with console logs](#full-source-code-with-console-logs)
-- [Color Selection Logic](#color-selection-logic)
+- [Color Generation Logic](#color-generation-logic)
 
 A bookmarklet that highlights searched text on webpages, for both light and dark backgrounds. selected text is used for highlighted terms with fallback to a search prompt to enter a phrase manually. colors are randomly chosen using a randomly generated pastel HSLA color. HSLA allows for highlighting on both light and dark backgrounds. When re-searching an already highlighted term, it replaces existing highlights with a new color. That means that if you keep clicking with a term selected then the color will continue to change, so you can pick a color you like.
 
@@ -317,18 +317,12 @@ javascript:(function() {
 ```
 
 
-## Color Selection Logic
+## Color Generation Logic
 
 ```javascript
 function generatePastelColor() {
     var hue = Math.floor(Math.random() * 360);
     return `hsla(${hue}, 100%, 50%, 0.3)`;
 }
-```- [Workflow example](#workflow-example)
-- [Minified Code (for bookmarklet)](#minified-code-for-bookmarklet)
-  - [Code Flattener (ChatGPT)](#code-flattener-chatgpt)
-- [Full source code](#full-source-code)
-- [Color Selection Logic](#color-selection-logic)
-
-
-The color selection logic generates a random pastel color using the HSLA color model. The hue is randomly selected from 0 to 359 degrees, while saturation is set to 100% and lightness to 50%, with an alpha value of 0.3 for transparency. This ensures that the highlight color is vibrant yet soft enough to be visible on both light and dark backgrounds.
+```
+The color generation logic generates a random pastel color using the HSLA color model. The hue is randomly selected from 0 to 359 degrees, while saturation is set to 100% and lightness to 50%, with an alpha value of 0.3 for transparency. This ensures that the highlight color is vibrant yet soft enough to be visible on both light and dark backgrounds.
